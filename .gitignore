@@ -12,3 +12,4 @@ bin/
 build/
 pkg/
 vendor/
+images/
