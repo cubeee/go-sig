@@ -182,6 +182,8 @@ func signature(c web.C, writer http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	attemptUpdate := true
+
 	// Check if an image already exists and make it if not
 	if _, err := os.Stat(fmt.Sprintf("%s/%s", imageRoot, req.hash)); os.IsNotExist(err) {
 		err = createAndSaveSignature(writer, req)
@@ -189,39 +191,23 @@ func signature(c web.C, writer http.ResponseWriter, r *http.Request) {
 			writeTextResponse(writer, err.Error())
 			return
 		}
-		return
+		attemptUpdate = false
 	}
 
-	updateSignature(writer, req)
+	if attemptUpdate {
+		updateSignature(writer, req)
+	}
 
 	http.ServeFile(writer, r, fmt.Sprintf("%s/%s", imageRoot, req.hash))
 }
 
-// Create a new signature with the given id and goal level
-func create(c web.C, writer http.ResponseWriter, r *http.Request) {
-	req, err := GetSignatureRequest(c)
-	if err != nil {
-		writeTextResponse(writer, err.Error())
-		return
-	}
+// Front page
+func index(c web.C, writer http.ResponseWriter, r *http.Request) {
+	writeTextResponse(writer,
+		`URL format: https://sig.scapelog.com/<username>/<skill>/<goal>
 
-	// Construct the url for signature display page
-	url := fmt.Sprintf("/s/%s/%d/%d", req.username, req.id, req.goal)
-
-	// Check if an image already exists
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", imageRoot, req.hash)); os.IsExist(err) {
-		http.Redirect(writer, r, url, http.StatusMovedPermanently)
-		return
-	}
-
-	err = createAndSaveSignature(writer, req)
-	if err != nil {
-		writeTextResponse(writer, err.Error())
-		return
-	}
-
-	// Redirect to the image
-	http.Redirect(writer, r, url, http.StatusMovedPermanently)
+Skill has to be 0-25 for now, name support coming in near future
+Goals 1-126 are treated as levels, 126-200,000,000 as experience`)
 }
 
 func main() {
@@ -246,8 +232,8 @@ func main() {
 
 	// Routes
 	log.Println("Setting up routes...")
+	goji.Get("/", index)
 	goji.Get("/s/:username/:id/:goal", signature)
-	goji.Get("/c/:username/:id/:goal", create) // todo: change to post
 	// todo: handler for front page
 
 	// Serve
