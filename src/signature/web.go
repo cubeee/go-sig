@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	imageRoot      = "/tmp/images"
+	imageRoot      = "images"
 	updateInterval = 4.0
 	generator      = new(Generator)
 	usernameRegex  = regexp.MustCompile("^[a-zA-Z0-9-_+]+$")
@@ -233,7 +233,7 @@ func main() {
 	// Routes
 	log.Println("Setting up routes...")
 	goji.Get("/", index)
-	goji.Get("/s/:username/:id/:goal", signature)
+	goji.Get("/:username/:id/:goal", signature)
 	// todo: handler for front page
 
 	// Serve
