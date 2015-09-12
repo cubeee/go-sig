@@ -66,10 +66,20 @@ func GetSignatureRequest(c web.C) (SignatureRequest, error) {
 	}
 
 	// Read the skill id and make sure it is numeric
-	id, err := strconv.Atoi(c.URLParams["id"])
-	if err != nil {
-		log.Println(err.Error())
-		return req, errors.New("Invalid id entered, make sure it is numeric")
+	id, err := strconv.Atoi(c.URLParams["skill"])
+	var skill Skill
+	if err == nil {
+		// Get the skill by id
+		skill, err = GetSkillById(id)
+		if err != nil {
+			return req, errors.New(fmt.Sprintf("No skill found for the given id, make sure it is between 0 and %d", len(Skills)))
+		}
+	} else {
+		// Get the skill by name
+		skill, err = GetSkillByName(c.URLParams["skill"])
+		if err != nil {
+			return req, errors.New("No skill found for the given skill name")
+		}
 	}
 
 	// Read the level and make sure it is numeric
@@ -81,12 +91,6 @@ func GetSignatureRequest(c web.C) (SignatureRequest, error) {
 	// Make sure the level is within valid bounds
 	if goal < 0 || goal > 200000000 {
 		return req, errors.New("Invalid level/xp goal entered, make sure it 0-200,000,000")
-	}
-
-	// Get the skill by given id
-	skill, err := GetSkillById(id)
-	if err != nil {
-		return req, err
 	}
 
 	// Switch the goal type if the goal exceeds the maximum skill level
@@ -233,7 +237,7 @@ func main() {
 	// Routes
 	log.Println("Setting up routes...")
 	goji.Get("/", index)
-	goji.Get("/:username/:id/:goal", signature)
+	goji.Get("/:username/:skill/:goal", signature)
 	// todo: handler for front page
 
 	// Serve

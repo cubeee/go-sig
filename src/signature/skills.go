@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 )
 
 type Skill struct {
@@ -25,7 +26,7 @@ func init() {
 		"Attack",        //  0
 		"Defence",       //  1
 		"Strength",      //  2
-		"Hitpoints",     //  3
+		"Constitution",  //  3
 		"Ranged",        //  4
 		"Prayer",        //  5
 		"Magic",         //  6
@@ -63,9 +64,10 @@ func init() {
 }
 
 func GetSkillByName(name string) (Skill, error) {
+	name = strings.ToLower(name)
 	var s Skill
 	for _, skill := range Skills {
-		if skill.name == name {
+		if strings.ToLower(skill.name) == name {
 			s = skill
 			return s, nil
 		}
