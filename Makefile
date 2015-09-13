@@ -19,7 +19,7 @@ package: build
 	echo "Maintainer: cubeee <cubeee.gh@gmail.com>" >> build/control
 	echo "Priority: optional" >> build/control
 	echo "Homepage: https://sig.scapelog.com/"
-	echo "Description: Dynamically generated skill goal signatures for RuneScape players" >> build/control
+	echo "Description: Dynamically generated and updated skill goal signatures for RuneScape players" >> build/control
 	tar cvzf build/data.tar.gz -C build etc opt
 	tar cvzf build/control.tar.gz -C build control
 	cd build && ar rc go-sig.deb debian-binary control.tar.gz data.tar.gz && cd ..
