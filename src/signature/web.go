@@ -43,7 +43,7 @@ const (
 
 var (
 	imageRoot      = "images"
-	updateInterval = 4.0
+	updateInterval = 10.0
 	generator      = new(Generator)
 	usernameRegex  = regexp.MustCompile("^[a-zA-Z0-9-_+]+$")
 )
@@ -139,6 +139,7 @@ func saveImage(hash string, img image.Image) {
 	}
 }
 
+// Update the signature based on the image's last modification date
 func updateSignature(writer http.ResponseWriter, req SignatureRequest) {
 	imagePath := fmt.Sprintf("%s/%s", imageRoot, req.hash)
 	if stat, err := os.Stat(imagePath); err == nil {
@@ -147,7 +148,6 @@ func updateSignature(writer http.ResponseWriter, req SignatureRequest) {
 		age := now.Sub(modTime)
 
 		if age.Minutes() >= updateInterval {
-			log.Println("Updating signature....")
 			err = createAndSaveSignature(writer, req)
 			if err != nil {
 				writeTextResponse(writer, err.Error())
@@ -207,11 +207,16 @@ func signature(c web.C, writer http.ResponseWriter, r *http.Request) {
 
 // Front page
 func index(c web.C, writer http.ResponseWriter, r *http.Request) {
-	writeTextResponse(writer,
+	writeTextResponse(writer, fmt.Sprintf(
 		`URL format: https://sig.scapelog.com/<username>/<skill>/<goal>
 
-Skill has to be 0-25 for now, name support coming in near future
-Goals 1-126 are treated as levels, 126-200,000,000 as experience`)
+<username> has to be alphanumeric and between 1-12 characters inclusively, -, _, and + may be used in place of spaces
+<skill> has to be either the skill's id (0-25) or it's name in lowercase (examples: constitution, ranged)
+<goal> with values 1-126 inclusively are treated as level goals, 127-200,000,000 as experience goals
+
+The images are currently updated every %d minutes
+
+Source code for this service is available at https://github.com/cubeee/go-sig`, int(updateInterval)))
 }
 
 func main() {
@@ -238,7 +243,6 @@ func main() {
 	log.Println("Setting up routes...")
 	goji.Get("/", index)
 	goji.Get("/:username/:skill/:goal", signature)
-	// todo: handler for front page
 
 	// Serve
 	goji.Serve()

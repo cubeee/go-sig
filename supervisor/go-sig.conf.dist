@@ -1,0 +1,12 @@
+[program:go-sig]
+command=/opt/gosig/gosig
+autostart=true
+autorestart=true
+startretries=10
+user=gosig
+directory=/opt/gosig/
+environment=IMG_PATH=/opt/gosig/images,DISABLE_LOGGING=true,PORT=3344
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/go-sig.log
+stdout_logfile_maxbytes=50MB
+stdout_logfile_backups=10
