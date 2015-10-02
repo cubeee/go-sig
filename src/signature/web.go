@@ -149,22 +149,19 @@ The images are currently updated every %d minutes
 Source code for this service is available at https://github.com/cubeee/go-sig`, int(updateInterval)))
 }
 
-func registerGenerators(generators ...generators.BaseGenerator) {
-	for _, generator := range generators {
-		url := generator.Url()
-		name := generator.Name()
-		goji.Get(url, func(c web.C, writer http.ResponseWriter, request *http.Request) {
-			parsedReq, err := generator.ParseSignatureRequest(c)
-			if err != nil {
-				writeTextResponse(writer, "Failed to parse the request")
-				return
-			}
-			hash := finalizeHash(name, generator.CreateHash(parsedReq))
-			req := util.SignatureRequest{parsedReq, hash}
+func registerGenerator(generator generators.BaseGenerator) {
+	goji.Get(generator.Url(), func(c web.C, writer http.ResponseWriter, request *http.Request) {
+		log.Println(generator.Name())
+		parsedReq, err := generator.ParseSignatureRequest(c)
+		if err != nil {
+			writeTextResponse(writer, "Failed to parse the request")
+			return
+		}
+		hash := finalizeHash(generator.Name(), generator.CreateHash(parsedReq))
+		req := util.SignatureRequest{parsedReq, hash}
 
-			serveSignature(c, writer, request, req, generator)
-		})
-	}
+		serveSignature(c, writer, request, req, generator)
+	})
 }
 
 func finalizeHash(name, hash string) string {
@@ -213,7 +210,8 @@ func main() {
 
 	// Generators
 	log.Println("Registering generators...")
-	registerGenerators(new(rs3.BoxGoalGenerator), new(rs3.ExampleGenerator))
+	registerGenerator(new(rs3.BoxGoalGenerator))
+	registerGenerator(new(rs3.ExampleGenerator))
 
 	// Serve
 	goji.Serve()

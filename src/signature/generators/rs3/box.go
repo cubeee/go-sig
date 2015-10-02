@@ -24,7 +24,7 @@ var (
 	baseHeight   = 80
 	baseImage    *image.RGBA
 	dpi          = 72.0
-	fontFile     = "./MuseoSans_500.ttf"
+	fontFile     = "./assets/fonts/MuseoSans_500.ttf"
 	baseFont     *truetype.Font
 	fontColor    = image.NewUniform(color.RGBA{245, 178, 65, 255})
 	size         = 12.0
@@ -241,7 +241,7 @@ func drawBar(img draw.Image, percent int) {
 
 // Load base image to memory
 func loadbaseImage() *image.RGBA {
-	baseImageHandle, _ := os.Open("base.png")
+	baseImageHandle, _ := os.Open("assets/img/base.png")
 	defer baseImageHandle.Close()
 	baseImage := image.NewRGBA(image.Rect(0, 0, baseWidth, baseHeight))
 	img, _ := png.Decode(baseImageHandle)
