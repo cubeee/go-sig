@@ -6,7 +6,7 @@ deps:
 build-gb:
 	gb build
 
-package: deps build
+package: deps build-gb
 	sudo rm -rf build/
 	mkdir -p build/opt/gosig/images
 	mkdir -p build/etc/supervisor/conf.d
