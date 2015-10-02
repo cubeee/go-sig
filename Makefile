@@ -1,7 +1,10 @@
-build:
-	gb build signature
+deps:
+	./install_dependencies.sh
 
-package: build
+build:
+	gb build
+
+package: deps build
 	sudo rm -rf build/
 	mkdir -p build/opt/gosig/images
 	mkdir -p build/etc/supervisor/conf.d
