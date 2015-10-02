@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"errors"
@@ -8,8 +8,8 @@ import (
 )
 
 type Skill struct {
-	name string
-	id   int
+	Name string
+	Id   int
 }
 
 const (
@@ -67,7 +67,7 @@ func GetSkillByName(name string) (Skill, error) {
 	name = strings.ToLower(name)
 	var s Skill
 	for _, skill := range Skills {
-		if strings.ToLower(skill.name) == name {
+		if strings.ToLower(skill.Name) == name {
 			s = skill
 			return s, nil
 		}

@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"errors"
@@ -10,8 +10,8 @@ import (
 )
 
 type Stat struct {
-	skill Skill
-	xp    int
+	Skill Skill
+	Xp    int
 }
 
 func GetStats(username string) (map[int]Stat, error) {
@@ -52,8 +52,8 @@ func GetStats(username string) (map[int]Stat, error) {
 		}
 
 		stats[id] = Stat{
-			skill: skill,
-			xp:    xp,
+			Skill: skill,
+			Xp:    xp,
 		}
 	}
 
@@ -63,7 +63,7 @@ func GetStats(username string) (map[int]Stat, error) {
 func GetStatBySkill(stats map[int]Stat, skill Skill) Stat {
 	var s Stat
 	for _, stat := range stats {
-		if stat.skill == skill {
+		if stat.Skill == skill {
 			return stat
 		}
 	}

@@ -3,20 +3,23 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"image"
 	"image/png"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os"
-	"regexp"
 	"runtime"
 	"strconv"
 	"time"
 
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
+
+	"signature/generators"
+	"signature/generators/rs3"
+	"signature/util"
 )
 
 type NullWriter int
@@ -25,96 +28,30 @@ func (NullWriter) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-type GoalType int
-
 type SignatureRequest struct {
-	username string
-	id       int
-	goal     int
-	skill    Skill
-	hash     string
-	goaltype GoalType
+	hash      string
+	generator generators.BaseGenerator
 }
-
-const (
-	GoalLevel GoalType = iota
-	GoalXP
-)
 
 var (
 	imageRoot      = "images"
 	updateInterval = 10.0
-	generator      = new(Generator)
-	usernameRegex  = regexp.MustCompile("^[a-zA-Z0-9-_+]+$")
 )
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-// Parse the request into a signature request
-func GetSignatureRequest(c web.C) (SignatureRequest, error) {
-	var req SignatureRequest
-
-	username := c.URLParams["username"] // todo: clean username
-	usernameLength := len(username)
-	if !usernameRegex.MatchString(username) {
-		return req, errors.New("Invalid username entered, allowed characters: alphabets, numbers, _ and +")
-	}
-	if usernameLength < 1 || usernameLength > 12 {
-		return req, errors.New("Username has to be between 1 and 12 characters long")
-	}
-
-	// Read the skill id and make sure it is numeric
-	id, err := strconv.Atoi(c.URLParams["skill"])
-	var skill Skill
-	if err == nil {
-		// Get the skill by id
-		skill, err = GetSkillById(id)
-		if err != nil {
-			return req, errors.New(fmt.Sprintf("No skill found for the given id, make sure it is between 0 and %d", len(Skills)))
-		}
-	} else {
-		// Get the skill by name
-		skill, err = GetSkillByName(c.URLParams["skill"])
-		if err != nil {
-			return req, errors.New("No skill found for the given skill name")
-		}
-	}
-
-	// Read the level and make sure it is numeric
-	goal, err := strconv.Atoi(c.URLParams["goal"])
-	if err != nil {
-		return req, errors.New("Invalid goal entered, make sure it is numeric")
-	}
-
-	// Make sure the level is within valid bounds
-	if goal < 0 || goal > 200000000 {
-		return req, errors.New("Invalid level/xp goal entered, make sure it 0-200,000,000")
-	}
-
-	// Switch the goal type if the goal exceeds the maximum skill level
-	goaltype := GoalLevel
-	if goal > MAX_LEVEL {
-		goaltype = GoalXP
-	}
-
-	// Create the hash for the request
-	hash := generator.CreateHash(username, id, goal)
-
-	return SignatureRequest{username, id, goal, skill, hash, goaltype}, nil
-}
-
-func createAndSaveSignature(writer http.ResponseWriter, req SignatureRequest) error {
+func createAndSaveSignature(writer http.ResponseWriter, req util.SignatureRequest, generator generators.BaseGenerator) error {
 	// Create the signature image
-	sig, err := generator.CreateSignature(req)
+	sig, err := generator.CreateSignature(req.Req)
 	if err != nil {
 		return err
 	}
 
 	// note: queue saving if it causes performance issues?
 	// Save the image to disk with the given hash as the file name
-	saveImage(req.hash, sig.Image)
+	saveImage(req.Hash, sig.Image)
 	return nil
 }
 
@@ -140,15 +77,15 @@ func saveImage(hash string, img image.Image) {
 }
 
 // Update the signature based on the image's last modification date
-func updateSignature(writer http.ResponseWriter, req SignatureRequest) {
-	imagePath := fmt.Sprintf("%s/%s", imageRoot, req.hash)
+func updateSignature(writer http.ResponseWriter, req util.SignatureRequest, generator generators.BaseGenerator) {
+	imagePath := fmt.Sprintf("%s/%s", imageRoot, req.Hash)
 	if stat, err := os.Stat(imagePath); err == nil {
 		modTime := stat.ModTime()
 		now := time.Now()
 		age := now.Sub(modTime)
 
 		if age.Minutes() >= updateInterval {
-			err = createAndSaveSignature(writer, req)
+			err = createAndSaveSignature(writer, req, generator)
 			if err != nil {
 				writeTextResponse(writer, err.Error())
 				return
@@ -158,7 +95,7 @@ func updateSignature(writer http.ResponseWriter, req SignatureRequest) {
 }
 
 // Write an image as a response to the client
-func writeImageResponse(writer http.ResponseWriter, signature Signature) {
+func writeImageResponse(writer http.ResponseWriter, signature util.Signature) {
 	buffer := new(bytes.Buffer)
 	if err := png.Encode(buffer, signature.Image); err != nil {
 		writeTextResponse(writer, "unable to encode image")
@@ -178,19 +115,12 @@ func writeTextResponse(writer http.ResponseWriter, text string) {
 }
 
 // Show an existing signature
-func signature(c web.C, writer http.ResponseWriter, r *http.Request) {
-	// Parse the request into a struct
-	req, err := GetSignatureRequest(c)
-	if err != nil {
-		writeTextResponse(writer, err.Error())
-		return
-	}
-
+func serveSignature(c web.C, writer http.ResponseWriter, r *http.Request, req util.SignatureRequest, generator generators.BaseGenerator) {
 	attemptUpdate := true
 
-	// Check if an image already exists and make it if not
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", imageRoot, req.hash)); os.IsNotExist(err) {
-		err = createAndSaveSignature(writer, req)
+	// Check if an image already exists and create it if not
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", imageRoot, req.Hash)); os.IsNotExist(err) {
+		err = createAndSaveSignature(writer, req, generator)
 		if err != nil {
 			writeTextResponse(writer, err.Error())
 			return
@@ -199,10 +129,10 @@ func signature(c web.C, writer http.ResponseWriter, r *http.Request) {
 	}
 
 	if attemptUpdate {
-		updateSignature(writer, req)
+		updateSignature(writer, req, generator)
 	}
 
-	http.ServeFile(writer, r, fmt.Sprintf("%s/%s", imageRoot, req.hash))
+	http.ServeFile(writer, r, fmt.Sprintf("%s/%s", imageRoot, req.Hash))
 }
 
 // Front page
@@ -219,6 +149,28 @@ The images are currently updated every %d minutes
 Source code for this service is available at https://github.com/cubeee/go-sig`, int(updateInterval)))
 }
 
+func registerGenerators(generators ...generators.BaseGenerator) {
+	for _, generator := range generators {
+		url := generator.Url()
+		name := generator.Name()
+		goji.Get(url, func(c web.C, writer http.ResponseWriter, request *http.Request) {
+			parsedReq, err := generator.ParseSignatureRequest(c)
+			if err != nil {
+				writeTextResponse(writer, "Failed to parse the request")
+				return
+			}
+			hash := finalizeHash(name, generator.CreateHash(parsedReq))
+			req := util.SignatureRequest{parsedReq, hash}
+
+			serveSignature(c, writer, request, req, generator)
+		})
+	}
+}
+
+func finalizeHash(name, hash string) string {
+	return util.GetMD5(fmt.Sprintf("%s-%s-%s", name, util.Salt, hash))
+}
+
 func main() {
 	log.Println("Starting go-sig/web")
 
@@ -226,6 +178,9 @@ func main() {
 		imageRoot = path
 	}
 	log.Printf("Using image root: %s", imageRoot)
+	if _, err := os.Stat(imageRoot); os.IsNotExist(err) {
+		os.MkdirAll(imageRoot, 0750)
+	}
 
 	if procs := os.Getenv("PROCS"); procs != "" {
 		if p, err := strconv.Atoi(procs); err != nil {
@@ -240,9 +195,25 @@ func main() {
 	}
 
 	// Routes
-	log.Println("Setting up routes...")
+	log.Println("Mapping routes...")
 	goji.Get("/", index)
-	goji.Get("/:username/:skill/:goal", signature)
+
+	profile := os.Getenv("ENABLE_DEBUG")
+	if profile == "1" || profile == "true" {
+		log.Println("Mapping debug routes...")
+		goji.Handle("/debug/pprof/", pprof.Index)
+		goji.Handle("/debug/pprof/cmdline", pprof.Cmdline)
+		goji.Handle("/debug/pprof/profile", pprof.Profile)
+		goji.Handle("/debug/pprof/symbol", pprof.Symbol)
+		goji.Handle("/debug/pprof/block", pprof.Handler("block").ServeHTTP)
+		goji.Handle("/debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
+		goji.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
+		goji.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+	}
+
+	// Generators
+	log.Println("Registering generators...")
+	registerGenerators(new(rs3.BoxGoalGenerator), new(rs3.ExampleGenerator))
 
 	// Serve
 	goji.Serve()
