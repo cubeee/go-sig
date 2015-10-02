@@ -1,0 +1,6 @@
+language: go
+go:
+  - 1.5
+before_install:
+  - go get github.com/constabulary/gb/...
+  - ./sh install_dependencies.sh
