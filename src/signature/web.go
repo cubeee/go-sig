@@ -165,7 +165,7 @@ func registerGenerator(generator generators.BaseGenerator) {
 }
 
 func finalizeHash(name, hash string) string {
-	return util.GetMD5(fmt.Sprintf("%s-%s-%s", name, util.Salt, hash))
+	return fmt.Sprintf("%s-%s", name, hash)
 }
 
 func main() {
@@ -211,7 +211,7 @@ func main() {
 	// Generators
 	log.Println("Registering generators...")
 	registerGenerator(new(rs3.BoxGoalGenerator))
-	registerGenerator(new(rs3.ExampleGenerator))
+	//registerGenerator(new(rs3.ExampleGenerator))
 
 	// Serve
 	goji.Serve()
