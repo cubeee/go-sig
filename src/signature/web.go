@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/flosch/pongo2"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
 
@@ -35,7 +36,9 @@ type SignatureRequest struct {
 
 var (
 	imageRoot      = "images"
+	publicPath     = "public/"
 	updateInterval = 10.0
+	indexTemplate  = pongo2.Must(pongo2.FromFile("templates/index.tpl"))
 )
 
 func init() {
@@ -137,16 +140,11 @@ func serveSignature(c web.C, writer http.ResponseWriter, r *http.Request, req ut
 
 // Front page
 func index(c web.C, writer http.ResponseWriter, r *http.Request) {
-	writeTextResponse(writer, fmt.Sprintf(
-		`URL format: https://sig.scapelog.com/<username>/<skill>/<goal>
-
-<username> has to be alphanumeric and between 1-12 characters inclusively, -, _, and + may be used in place of spaces
-<skill> has to be either the skill's id (0-25) or it's name in lowercase (examples: constitution, ranged)
-<goal> with values 1-126 inclusively are treated as level goals, 127-200,000,000 as experience goals
-
-The images are currently updated every %d minutes
-
-Source code for this service is available at https://github.com/cubeee/go-sig`, int(updateInterval)))
+	if err := indexTemplate.ExecuteWriter(pongo2.Context{
+		"skills": util.SkillNames,
+	}, writer); err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func registerGenerator(generator generators.BaseGenerator) {
@@ -162,6 +160,13 @@ func registerGenerator(generator generators.BaseGenerator) {
 
 		serveSignature(c, writer, request, req, generator)
 	})
+
+	formUrl := generator.FormUrl()
+	if formUrl != "" {
+		goji.Post(formUrl, func(c web.C, writer http.ResponseWriter, request *http.Request) {
+			generator.HandleForm(c, writer, request)
+		})
+	}
 }
 
 func finalizeHash(name, hash string) string {
@@ -194,6 +199,11 @@ func main() {
 	// Routes
 	log.Println("Mapping routes...")
 	goji.Get("/", index)
+
+	// Setup static files
+	static := web.New()
+	static.Get("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir(publicPath))))
+	http.Handle("/assets/", static)
 
 	profile := os.Getenv("ENABLE_DEBUG")
 	if profile == "1" || profile == "true" {

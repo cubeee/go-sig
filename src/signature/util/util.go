@@ -3,15 +3,19 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"github.com/flosch/pongo2"
+	"github.com/zenazn/goji/web"
 	"image"
+	"net/http"
 	"regexp"
 	"strconv"
 )
 
 var (
-	Salt          = "ded3b63a6f11a9efd8e0f6a9b84fbeb1"
-	hasher        = md5.New()
-	UsernameRegex = regexp.MustCompile("^[a-zA-Z0-9-_+]+$")
+	Salt           = "ded3b63a6f11a9efd8e0f6a9b84fbeb1"
+	hasher         = md5.New()
+	UsernameRegex  = regexp.MustCompile("^[a-zA-Z0-9-_+]+$")
+	resultTemplate = pongo2.Must(pongo2.FromFile("templates/result.tpl"))
 )
 
 type GoalType int
@@ -45,6 +49,14 @@ func (s ParsedSignatureRequest) GetProperty(name string) interface{} {
 
 func NewSignatureRequest() ParsedSignatureRequest {
 	return ParsedSignatureRequest{properties: make(map[string]interface{})}
+}
+
+func ServeResultPage(c web.C, writer http.ResponseWriter, r *http.Request, url string) {
+	if err := resultTemplate.ExecuteWriter(pongo2.Context{
+		"url": url,
+	}, writer); err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetMD5(text string) string {

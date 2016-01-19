@@ -17,12 +17,7 @@ const (
 )
 
 var (
-	Skills        = map[int]Skill{}
-	ExpThresholds = map[int]int{}
-)
-
-func init() {
-	skillNames := []string{
+	SkillNames = []string{
 		"Attack",        //  0
 		"Defence",       //  1
 		"Strength",      //  2
@@ -50,8 +45,13 @@ func init() {
 		"Dungeoneering", // 24
 		"Divination",    // 25
 	}
-	for idx := 0; idx < len(skillNames); idx++ {
-		Skills[idx] = Skill{skillNames[idx], idx}
+	Skills        = map[int]Skill{}
+	ExpThresholds = map[int]int{}
+)
+
+func init() {
+	for idx := 0; idx < len(SkillNames); idx++ {
+		Skills[idx] = Skill{SkillNames[idx], idx}
 	}
 
 	points, output := 0.0, 0.0

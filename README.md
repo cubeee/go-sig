@@ -12,7 +12,7 @@ Dynamically generated and updated skill goal signatures for RuneScape players
     $ make deps
 
     # Build go-sig
-    $ make build
+    $ make build-gb
 
     # Run go-sig
     $ bin/signature

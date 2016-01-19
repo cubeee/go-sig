@@ -13,6 +13,7 @@ import (
 	"image/draw"
 	"image/png"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"signature/generators"
 	"signature/util"
@@ -167,9 +168,28 @@ func (b BoxGoalGenerator) Url() string {
 	return "/:username/:skill/:goal"
 }
 
+func (b BoxGoalGenerator) FormUrl() string {
+	return "/tooltip/create"
+}
+
 func (b BoxGoalGenerator) CreateHash(req util.ParsedSignatureRequest) string {
 	skill := req.GetProperty("skill").(util.Skill)
 	return fmt.Sprintf("%s-%d-%d", req.GetProperty("username"), skill.Id, req.GetProperty("goal"))
+}
+
+func (b BoxGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, request *http.Request) {
+	request.ParseForm()
+	form := request.Form
+	username := form.Get("username")
+	skill := form.Get("skill")
+	goal := form.Get("goal")
+
+	// todo: validate input lol
+
+	url := fmt.Sprintf("/%s/%s/%s", username, skill, goal)
+	fmt.Println(url)
+	//http.Redirect(writer, request, url, http.StatusTemporaryRedirect)
+	util.ServeResultPage(c, writer, request, url)
 }
 
 // Parse the request into a signature request

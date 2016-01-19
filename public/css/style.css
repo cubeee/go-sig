@@ -1,0 +1,44 @@
+.main.container {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+.ui.vertical.stripe {
+  padding: 8em 0em;
+}
+
+.ui.vertical.stripe h3 {
+  font-size: 2em;
+}
+
+.ui.vertical.stripe .button + h3,
+.ui.vertical.stripe p + h3 {
+  margin-top: 3em;
+}
+
+.ui.vertical.stripe .floated.image {
+  clear: both;
+}
+
+.ui.vertical.stripe p {
+  font-size: 1.33em;
+}
+
+.ui.vertical.stripe .horizontal.divider {
+  margin: 3em 0em;
+}
+
+.ui.celled.grid > .row > .column {
+  box-shadow: none;
+  border-right: 1px solid rgba(34, 36, 38, 0.15);
+}
+
+.quote.stripe.segment {
+  padding: 0em;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+}
+
+.quote.stripe.segment .grid .column {
+  padding-top: 5em;
+  padding-bottom: 5em;
+}
