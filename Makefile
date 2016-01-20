@@ -12,6 +12,8 @@ package: deps build-gb
 	mkdir -p build/etc/supervisor/conf.d
 	cp bin/signature build/opt/gosig/gosig
 	cp -r assets build/opt/gosig/
+	cp -r public build/opt/gosig/
+	cp -r templates build/opt/gosig/
 	cp supervisor/go-sig.conf build/etc/supervisor/conf.d/go-sig.conf
 	sudo chown -R gosig: build/opt
 	sudo chown -R root: build/etc
