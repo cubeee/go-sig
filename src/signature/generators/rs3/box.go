@@ -187,11 +187,18 @@ func (b BoxGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, reques
 	skill := form.Get("skill")
 	goal := form.Get("goal")
 
-	// todo: validate input lol
+	hide_username := form.Get("hide")
+	if hide_username == "on" && util.AES_KEY != nil {
+		name, err := util.Encrypt(username)
+		if err == nil {
+			name = "_" + name
+		}
+		username = name
+	}
+
+	// todo: validate input?
 
 	url := fmt.Sprintf("/%s/%s/%s", username, skill, goal)
-	fmt.Println(url)
-	//http.Redirect(writer, request, url, http.StatusTemporaryRedirect)
 	util.ServeResultPage(c, writer, request, url)
 }
 
@@ -199,7 +206,7 @@ func (b BoxGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, reques
 func (b BoxGoalGenerator) ParseSignatureRequest(c web.C) (util.ParsedSignatureRequest, error) {
 	req := util.NewSignatureRequest()
 
-	username := c.URLParams["username"] // todo: clean username
+	username := util.ParseUsername(c.URLParams["username"])
 	usernameLength := len(username)
 	if !util.UsernameRegex.MatchString(username) {
 		return req, errors.New("Invalid username entered, allowed characters: alphabets, numbers, _ and +")

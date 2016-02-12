@@ -141,7 +141,8 @@ func serveSignature(c web.C, writer http.ResponseWriter, r *http.Request, req ut
 // Front page
 func index(c web.C, writer http.ResponseWriter, r *http.Request) {
 	if err := indexTemplate.ExecuteWriter(pongo2.Context{
-		"skills": util.SkillNames,
+		"skills":  util.SkillNames,
+		"has_aes": util.AES_KEY,
 	}, writer); err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
@@ -189,9 +190,12 @@ func main() {
 		}
 	}
 
+	if key := os.Getenv("AES_KEY"); key != "" {
+		util.AES_KEY = []byte(key)
+	}
+
 	disableLogging := os.Getenv("DISABLE_LOGGING")
 	if disableLogging == "1" || disableLogging == "true" {
-		// Disable logger
 		log.SetOutput(new(NullWriter))
 	}
 

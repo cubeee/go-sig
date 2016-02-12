@@ -34,6 +34,7 @@ IMG_PATH | Path to the directory where you want to store the generated images | 
 PROCS | Number of operating system threads you want to give for `go-sig` | `runtime.NumCPU()`
 DISABLE_LOGGING | Use `true` or `1` to disable output from `log` | false
 ENABLE_DEBUG | Use `true` or `1` to map routes to `pprof` urls | false
+AES_KEY | The key used to encrypt and decrypt usernames in urls | ""
 
 [build-status-img]: https://travis-ci.org/cubeee/go-sig.svg
 [build-status]: https://travis-ci.org/cubeee/go-sig

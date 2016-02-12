@@ -53,6 +53,14 @@
                 </div>
               </div>
             </div>
+            {% if has_aes %}
+            <div class="field">
+              <div class="ui checkbox">
+                <input type="checkbox" name="hide">
+                <label>Hide username</label>
+              </div>
+            </div>
+            {% endif %}
             <div class="field">
               <input type="submit" name="submit" class="ui button" value="Create">
             </div>
