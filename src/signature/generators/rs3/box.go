@@ -53,8 +53,6 @@ type BoxGoalGenerator struct {
 }
 
 func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util.Signature, error) {
-	baseImage := cloneImage(baseImage)
-
 	username := req.GetProperty("username").(string)
 	skill := req.GetProperty("skill").(util.Skill)
 	goal := req.GetProperty("goal").(int)
@@ -67,15 +65,18 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 	}
 	stat := util.GetStatBySkill(stats, skill)
 
-	currentLevel := util.LevelFromXP(stat.Xp)
+	currentLevel := util.LevelFromXP(stat.Skill, stat.Xp)
 	currentXP := stat.Xp
-	goalXP := util.XPForLevel(goal)
-	remainder := util.XPToLevel(currentXP, goal)
+	var goalXP int
+	var remainder int
 	if goaltype == util.GoalXP {
 		goalXP = goal
 		remainder = goalXP - currentXP
+	} else {
+		goalXP = util.XPForLevel(stat.Skill, goal)
+		remainder = util.XPToLevel(stat.Skill, currentXP, goal)
 	}
-	goalLevel := util.LevelFromXP(goalXP)
+	goalLevel := util.LevelFromXP(stat.Skill, goalXP)
 	if remainder < 0 {
 		remainder = 0
 	}
@@ -97,6 +98,8 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 				Hinting: hinting,
 			})}
 	}
+
+	baseImage := cloneImage(baseImage)
 
 	drawer := createDrawer(baseImage, fontColor, baseFont, size, dpi,
 		font.HintingFull)
@@ -235,7 +238,7 @@ func (b BoxGoalGenerator) ParseSignatureRequest(c web.C) (util.ParsedSignatureRe
 
 	// Switch the goal type if the goal exceeds the maximum skill level
 	goaltype := util.GoalLevel
-	if goal > util.MAX_LEVEL {
+	if (skill.Id == util.INVENTION_ID && goal > util.INVENTION_MAX_LEVEL) || (skill.Id != util.INVENTION_ID && goal > util.MAX_LEVEL) {
 		goaltype = util.GoalXP
 	}
 

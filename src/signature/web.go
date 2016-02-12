@@ -149,7 +149,6 @@ func index(c web.C, writer http.ResponseWriter, r *http.Request) {
 
 func registerGenerator(generator generators.BaseGenerator) {
 	goji.Get(generator.Url(), func(c web.C, writer http.ResponseWriter, request *http.Request) {
-		log.Println(generator.Name())
 		parsedReq, err := generator.ParseSignatureRequest(c)
 		if err != nil {
 			writeTextResponse(writer, "Failed to parse the request")
