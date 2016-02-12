@@ -26,7 +26,7 @@
       <div class="ui raised segment three column grid">
         <div class="ten wide column">
           <h3>Skill interface tooltip</h3>
-          <form class="ui large form" action="/tooltip/create" method="POST">
+          <form id="generator" class="ui large form" action="/tooltip/create" method="POST">
             <div class="field">
               <div class="ui fluid labeled small input">
                 <div class="ui label">Username:</div>

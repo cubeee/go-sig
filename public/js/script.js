@@ -2,7 +2,8 @@ var xpGoalInputMask = function() {
   $(".tooltip-sig-xp-goal").inputmask({
     mask: "9{1,3}[,9{0,3}][,9{0,3}]",
     placeholder: "",
-    greedy: false
+    greedy: false,
+    removeMaskOnSubmit: true
   });
 }
 
@@ -10,7 +11,8 @@ var levelGoalInputMask = function() {
   $(".tooltip-sig-level-goal").inputmask({
     mask: "9{1,3}",
     placeholder: "",
-    greedy: false
+    greedy: false,
+    removeMaskOnSubmit: true
   });
 }
 
