@@ -9,12 +9,12 @@ build-gb:
 package: deps build-gb
 	sudo rm -rf build/
 	mkdir -p build/opt/gosig/images
-	mkdir -p build/etc/supervisor/conf.d
+	mkdir -p build/etc/systemd/system
 	cp bin/signature build/opt/gosig/gosig
 	cp -r assets build/opt/gosig/
 	cp -r public build/opt/gosig/
 	cp -r templates build/opt/gosig/
-	cp supervisor/go-sig.conf build/etc/supervisor/conf.d/go-sig.conf
+	cp systemd/go-sig.service build/etc/systemd/system/go-sig.service
 	sudo chown -R gosig: build/opt
 	sudo chown -R root: build/etc
 	echo 2.0 > build/debian-binary
