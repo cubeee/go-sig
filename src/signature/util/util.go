@@ -9,10 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/flosch/pongo2"
+	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"github.com/zenazn/goji/web"
 	"image"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -146,4 +150,101 @@ func decrypt(str string) (plaintext string, err error) {
 
 	plaintext = string(ciphertext)
 	return
+}
+
+func WithSuffix(number int) string {
+	units := map[int]string{
+		1000000: "m",
+		1000:    "k",
+	}
+	for amount, unit := range units {
+		if number%amount == 0 {
+			return fmt.Sprintf("%v%s", number/amount, unit)
+		}
+	}
+	return strconv.Itoa(number)
+}
+
+func FromSuffixed(value string) (int, error) {
+	lastCharacter := string(value[len(value)-1])
+	if lastCharacter != "k" && lastCharacter != "m" {
+		if val, err := strconv.Atoi(value); err == nil {
+			return val, nil
+		} else {
+			return 0, errors.New("Invalid suffix")
+		}
+	}
+	suffixless := value[:len(value)-1]
+	number, err := strconv.Atoi(suffixless)
+	if lastCharacter == "k" && err == nil {
+		return number * 1000, nil
+	} else if lastCharacter == "m" && err == nil {
+		return number * 1000000, nil
+	}
+	val, err := strconv.Atoi(value)
+	if err != nil {
+		val = 0
+	}
+	return val, errors.New("Failed to parse suffixed number")
+}
+
+// Parse query parameters and return them in the right order
+func ParseQueryParameters(query string) (params []QueryParameter, err error) {
+	for query != "" {
+		key := query
+		if i := strings.IndexAny(key, "&;"); i >= 0 {
+			key, query = key[:i], key[i+1:]
+		} else {
+			query = ""
+		}
+		if key == "" {
+			continue
+		}
+		value := ""
+		if i := strings.Index(key, "="); i >= 0 {
+			key, value = key[:i], key[i+1:]
+		}
+		key, err1 := url.QueryUnescape(key)
+		if err1 != nil {
+			if err == nil {
+				err = err1
+			}
+			continue
+		}
+		value, err1 = url.QueryUnescape(value)
+		if err1 != nil {
+			if err == nil {
+				err = err1
+			}
+			continue
+		}
+		params = append(params, QueryParameter{key, value})
+	}
+	return params, err
+}
+
+type QueryParameter struct {
+	Key   string
+	Value string
+}
+
+// Load font(s) to memory
+func LoadFont(fontFile string) *truetype.Font {
+	fontBytes, err := ioutil.ReadFile(fontFile)
+	if err != nil {
+		panic(err)
+	}
+	baseFont, err := freetype.ParseFont(fontBytes)
+	if err != nil {
+		panic(err)
+	}
+	return baseFont
+}
+
+func GetGoalType(skill Skill, goal int) GoalType {
+	goaltype := GoalLevel
+	if (skill.Id == INVENTION_ID && goal > INVENTION_MAX_LEVEL) || (skill.Id != INVENTION_ID && goal > MAX_LEVEL) {
+		goaltype = GoalXP
+	}
+	return goaltype
 }

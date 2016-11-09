@@ -18,6 +18,7 @@ const (
 	INVENTION_ID        int = 26
 )
 
+// todo: shortened names, no params, total level, front page form
 var (
 	SkillNames = []string{
 		"Attack",        //  0

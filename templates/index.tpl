@@ -75,7 +75,54 @@
     <div class="column">
       <div class="ui raised segment one column grid">
         <div class="column">
-          <h3>Multiple skill goals in one - coming soon!</h3>
+          <h3>Multiple skill goals in one</h3>
+		  <form id="generator" class="ui large form" action="/multi/create" method="POST">
+            <div class="field">
+              <div class="ui fluid labeled small input">
+                <div class="ui label">Username:</div>
+                <input id="username-field" type="text" name="username">
+              </div>
+            </div>
+			<div id="skillgoals">
+				<div id="multiskill" class="ui two column grid">
+					<div class="six wide column">
+						<div class="field">
+							<div class="ui fluid labeled small input">
+								<div class="ui label">Skill:</div>
+								{{ skill_dropdown(skills) }}
+							</div>
+						</div>
+					</div>
+					<div class="ten wide column">
+						<div class="field">
+							<div class="ui fluid labeled small input">
+								<div class="ui label">Goal:</div>
+								<input id="tooltip-skill-goal" class="tooltip-sig-level-goal" type="text" name="goal" style="border-radius: 0;">
+								<div class="ui dropdown label" tabindex="0" style="border-radius: 0;">
+								<div class="text">Level</div>
+								<i class="dropdown icon"></i>
+								<div id="goal-dropdown" class="menu transition hidden" tabindex="-1">
+									<div class="item active selected">Level</div>
+									<div class="item">Experience</div>
+								</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+            {% if has_aes %}
+            <div class="field">
+              <div class="ui checkbox">
+                <input type="checkbox" name="hide">
+                <label>Hide username</label>
+              </div>
+            </div>
+            {% endif %}
+            <div class="field">
+              <input type="submit" name="submit" class="ui button" value="Create">
+            </div>
+          </form>
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@ type BaseGenerator interface {
 	FormUrl() string
 	CreateSignature(req util.ParsedSignatureRequest) (util.Signature, error)
 	CreateHash(req util.ParsedSignatureRequest) string
-	ParseSignatureRequest(c web.C) (util.ParsedSignatureRequest, error)
+	ParseSignatureRequest(c web.C, r *http.Request) (util.ParsedSignatureRequest, error)
 	HandleForm(c web.C, writer http.ResponseWriter, request *http.Request)
 }
 

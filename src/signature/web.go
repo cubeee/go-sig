@@ -20,6 +20,7 @@ import (
 
 	"signature/generators"
 	"signature/generators/rs3"
+	"signature/generators/rs3/multi"
 	"signature/util"
 )
 
@@ -150,9 +151,9 @@ func index(c web.C, writer http.ResponseWriter, r *http.Request) {
 
 func registerGenerator(generator generators.BaseGenerator) {
 	goji.Get(generator.Url(), func(c web.C, writer http.ResponseWriter, request *http.Request) {
-		parsedReq, err := generator.ParseSignatureRequest(c)
+		parsedReq, err := generator.ParseSignatureRequest(c, request)
 		if err != nil {
-			writeTextResponse(writer, "Failed to parse the request")
+			writeTextResponse(writer, "Failed to parse the request: "+err.Error())
 			return
 		}
 		hash := finalizeHash(generator.Name(), generator.CreateHash(parsedReq))
@@ -224,6 +225,7 @@ func main() {
 	// Generators
 	log.Println("Registering generators...")
 	registerGenerator(new(rs3.BoxGoalGenerator))
+	registerGenerator(new(multi.MultiGoalGenerator))
 	//registerGenerator(new(rs3.ExampleGenerator))
 
 	// Serve

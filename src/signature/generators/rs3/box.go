@@ -12,7 +12,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"signature/generators"
@@ -25,8 +24,7 @@ var (
 	baseHeight   = 80
 	baseImage    *image.RGBA
 	dpi          = 72.0
-	fontFile     = "./assets/fonts/MuseoSans_500.ttf"
-	baseFont     *truetype.Font
+	baseFont     = util.LoadFont("./assets/fonts/MuseoSans_500.ttf")
 	fontColor    = image.NewUniform(color.RGBA{245, 178, 65, 255})
 	size         = 12.0
 	salt         = "ded3b63a6f11a9efd8e0f6a9b84fbeb1"
@@ -39,7 +37,6 @@ var (
 
 func init() {
 	baseImage = loadbaseImage()
-	loadFonts()
 }
 
 type StaticLabel struct {
@@ -58,7 +55,7 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 	goal := req.GetProperty("goal").(int)
 	goaltype := req.GetProperty("goaltype").(util.GoalType)
 
-	stats, err := util.GetStats(username) // introduce field
+	stats, err := util.GetStats(username)
 	if err != nil {
 		var s util.Signature
 		return s, errors.New(fmt.Sprintf("Failed to fetch stats for %s", username))
@@ -203,7 +200,7 @@ func (b BoxGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, reques
 }
 
 // Parse the request into a signature request
-func (b BoxGoalGenerator) ParseSignatureRequest(c web.C) (util.ParsedSignatureRequest, error) {
+func (b BoxGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (util.ParsedSignatureRequest, error) {
 	req := util.NewSignatureRequest()
 
 	username := util.ParseUsername(c.URLParams["username"])
@@ -277,18 +274,6 @@ func loadbaseImage() *image.RGBA {
 	img, _ := png.Decode(baseImageHandle)
 	draw.Draw(baseImage, baseImage.Bounds(), img, image.ZP, draw.Src)
 	return baseImage
-}
-
-// Load font(s) to memory
-func loadFonts() {
-	fontBytes, err := ioutil.ReadFile(fontFile)
-	if err != nil {
-		panic(err)
-	}
-	baseFont, err = freetype.ParseFont(fontBytes)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // Clones an image
