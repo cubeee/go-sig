@@ -1,3 +1,0 @@
-github.com/zenazn/goji
-github.com/golang/freetype
-github.com/flosch/pongo2

@@ -17,7 +17,7 @@ type Stat struct {
 func GetStats(username string) (map[int]Stat, error) {
 	stats := map[int]Stat{}
 
-	url := fmt.Sprintf("http://hiscore.runescape.com/index_lite.ws?player=%s", username)
+	url := fmt.Sprintf("http://services.runescape.com/m=hiscore/index_lite.ws?player=%s", username)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return stats, err

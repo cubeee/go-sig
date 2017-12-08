@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"image"
 	"image/png"
@@ -18,10 +17,10 @@ import (
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
 
-	"signature/generators"
-	"signature/generators/rs3"
-	"signature/generators/rs3/multi"
-	"signature/util"
+	"github.com/cubeee/go-sig/signature/generators"
+	"github.com/cubeee/go-sig/signature/generators/rs3"
+	"github.com/cubeee/go-sig/signature/generators/rs3/multi"
+	"github.com/cubeee/go-sig/signature/util"
 )
 
 type NullWriter int
@@ -30,23 +29,18 @@ func (NullWriter) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-type SignatureRequest struct {
-	hash      string
-	generator generators.BaseGenerator
-}
-
 var (
 	imageRoot      = "images"
-	publicPath     = "public/"
+	publicPath     = "resources/public/"
 	updateInterval = 10.0
-	indexTemplate  = pongo2.Must(pongo2.FromFile("templates/index.tpl"))
+	indexTemplate  = pongo2.Must(pongo2.FromFile("resources/templates/index.tpl"))
 )
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-func createAndSaveSignature(writer http.ResponseWriter, req util.SignatureRequest, generator generators.BaseGenerator) error {
+func createAndSaveSignature(req util.SignatureRequest, generator generators.BaseGenerator) error {
 	// Create the signature image
 	sig, err := generator.CreateSignature(req.Req)
 	if err != nil {
@@ -89,27 +83,12 @@ func updateSignature(writer http.ResponseWriter, req util.SignatureRequest, gene
 		age := now.Sub(modTime)
 
 		if age.Minutes() >= updateInterval {
-			err = createAndSaveSignature(writer, req, generator)
+			err = createAndSaveSignature(req, generator)
 			if err != nil {
 				writeTextResponse(writer, err.Error())
 				return
 			}
 		}
-	}
-}
-
-// Write an image as a response to the client
-func writeImageResponse(writer http.ResponseWriter, signature util.Signature) {
-	buffer := new(bytes.Buffer)
-	if err := png.Encode(buffer, signature.Image); err != nil {
-		writeTextResponse(writer, "unable to encode image")
-		return
-	}
-	writer.Header().Set("Content-Type", "image/png")
-	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-	if _, err := writer.Write(buffer.Bytes()); err != nil {
-		writeTextResponse(writer, "unable to write image")
-		return
 	}
 }
 
@@ -119,12 +98,12 @@ func writeTextResponse(writer http.ResponseWriter, text string) {
 }
 
 // Show an existing signature
-func serveSignature(c web.C, writer http.ResponseWriter, r *http.Request, req util.SignatureRequest, generator generators.BaseGenerator) {
+func serveSignature(writer http.ResponseWriter, r *http.Request, req util.SignatureRequest, generator generators.BaseGenerator) {
 	attemptUpdate := true
 
 	// Check if an image already exists and create it if not
 	if _, err := os.Stat(fmt.Sprintf("%s/%s", imageRoot, req.Hash)); os.IsNotExist(err) {
-		err = createAndSaveSignature(writer, req, generator)
+		err = createAndSaveSignature(req, generator)
 		if err != nil {
 			writeTextResponse(writer, err.Error())
 			return
@@ -140,10 +119,10 @@ func serveSignature(c web.C, writer http.ResponseWriter, r *http.Request, req ut
 }
 
 // Front page
-func index(c web.C, writer http.ResponseWriter, r *http.Request) {
+func index(_ web.C, writer http.ResponseWriter, _ *http.Request) {
 	if err := indexTemplate.ExecuteWriter(pongo2.Context{
 		"skills":  util.SkillNames,
-		"has_aes": util.AES_KEY,
+		"has_aes": util.AesKey,
 	}, writer); err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
@@ -157,9 +136,9 @@ func registerGenerator(generator generators.BaseGenerator) {
 			return
 		}
 		hash := finalizeHash(generator.Name(), generator.CreateHash(parsedReq))
-		req := util.SignatureRequest{parsedReq, hash}
+		req := util.SignatureRequest{Req: parsedReq, Hash: hash}
 
-		serveSignature(c, writer, request, req, generator)
+		serveSignature(writer, request, req, generator)
 	})
 
 	formUrl := generator.FormUrl()
@@ -175,7 +154,7 @@ func finalizeHash(name, hash string) string {
 }
 
 func main() {
-	log.Println("Starting go-sig/web")
+	log.Println("Starting go-sig")
 
 	if path := os.Getenv("IMG_PATH"); path != "" {
 		imageRoot = path
@@ -192,7 +171,7 @@ func main() {
 	}
 
 	if key := os.Getenv("AES_KEY"); key != "" {
-		util.AES_KEY = []byte(key)
+		util.AesKey = []byte(key)
 	}
 
 	disableLogging := os.Getenv("DISABLE_LOGGING")

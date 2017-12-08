@@ -3,7 +3,7 @@ package generators
 import (
 	"github.com/zenazn/goji/web"
 	"net/http"
-	"signature/util"
+	"github.com/cubeee/go-sig/signature/util"
 )
 
 type BaseGenerator interface {

@@ -14,8 +14,8 @@ import (
 	"image/png"
 	"net/http"
 	"os"
-	"signature/generators"
-	"signature/util"
+	"github.com/cubeee/go-sig/signature/generators"
+	"github.com/cubeee/go-sig/signature/util"
 	"strconv"
 )
 
@@ -24,10 +24,9 @@ var (
 	baseHeight   = 80
 	baseImage    *image.RGBA
 	dpi          = 72.0
-	baseFont     = util.LoadFont("./assets/fonts/MuseoSans_500.ttf")
+	baseFont     = util.LoadFont("./resources/assets/fonts/MuseoSans_500.ttf")
 	fontColor    = image.NewUniform(color.RGBA{245, 178, 65, 255})
 	size         = 12.0
-	salt         = "ded3b63a6f11a9efd8e0f6a9b84fbeb1"
 	staticLabels = []StaticLabel{
 		{"Current XP:", 7, 15},
 		{"Target lvl:", 7, 30},
@@ -36,7 +35,7 @@ var (
 )
 
 func init() {
-	baseImage = loadbaseImage()
+	baseImage = loadBaseImage()
 }
 
 type StaticLabel struct {
@@ -53,7 +52,7 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 	username := req.GetProperty("username").(string)
 	skill := req.GetProperty("skill").(util.Skill)
 	goal := req.GetProperty("goal").(int)
-	goaltype := req.GetProperty("goaltype").(util.GoalType)
+	goalType := req.GetProperty("goalType").(util.GoalType)
 
 	stats, err := util.GetStats(username)
 	if err != nil {
@@ -66,7 +65,7 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 	currentXP := stat.Xp
 	var goalXP int
 	var remainder int
-	if goaltype == util.GoalXP {
+	if goalType == util.GoalXP {
 		goalXP = goal
 		remainder = goalXP - currentXP
 	} else {
@@ -121,7 +120,7 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 		fixed.I(7), 1)
 
 	for _, label := range staticLabels {
-		if label.str == "Target lvl:" && goaltype == util.GoalXP {
+		if label.str == "Target lvl:" && goalType == util.GoalXP {
 			label.str = "Target XP:"
 		}
 
@@ -148,16 +147,15 @@ func (b BoxGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util
 	// bar percentage
 	x = 71
 	y = 61
-	color := image.White
+	textColor := image.White
 	if percent >= 50 {
-		color = image.Black
+		textColor = image.Black
 	}
 
-	drawer = createDrawer(baseImage, color, baseFont, 11, dpi,
-		font.HintingFull)
+	drawer = createDrawer(baseImage, textColor, baseFont, 11, dpi, font.HintingFull)
 	drawString(fmt.Sprintf("%d%%", percent), fixed.I(x), y)
 
-	return util.Signature{username, baseImage}, nil
+	return util.Signature{Username: username, Image: baseImage}, nil
 }
 
 func (b BoxGoalGenerator) Name() string {
@@ -184,8 +182,8 @@ func (b BoxGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, reques
 	skill := form.Get("skill")
 	goal := form.Get("goal")
 
-	hide_username := form.Get("hide")
-	if hide_username == "on" && util.AES_KEY != nil {
+	hideUsername := form.Get("hide")
+	if hideUsername == "on" && util.AesKey != nil {
 		name, err := util.Encrypt(username)
 		if err == nil {
 			name = "_" + name
@@ -196,7 +194,7 @@ func (b BoxGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, reques
 	// todo: validate input?
 
 	url := fmt.Sprintf("/%s/%s/%s", username, skill, goal)
-	util.ServeResultPage(c, writer, request, url)
+	util.ServeResultPage(writer, url)
 }
 
 // Parse the request into a signature request
@@ -206,10 +204,10 @@ func (b BoxGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (util.
 	username := util.ParseUsername(c.URLParams["username"])
 	usernameLength := len(username)
 	if !util.UsernameRegex.MatchString(username) {
-		return req, errors.New("Invalid username entered, allowed characters: alphabets, numbers, _ and +")
+		return req, errors.New("invalid username entered, allowed characters: alphabets, numbers, _ and +")
 	}
 	if usernameLength < 1 || usernameLength > 12 {
-		return req, errors.New("Username has to be between 1 and 12 characters long")
+		return req, errors.New("username has to be between 1 and 12 characters long")
 	}
 
 	// Read the skill id and make sure it is numeric
@@ -219,38 +217,38 @@ func (b BoxGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (util.
 		// Get the skill by id
 		skill, err = util.GetSkillById(id)
 		if err != nil {
-			return req, errors.New(fmt.Sprintf("No skill found for the given id, make sure it is between 0 and %d", len(util.Skills)))
+			return req, errors.New(fmt.Sprintf("no skill found for the given id, make sure it is between 0 and %d", len(util.Skills)))
 		}
 	} else {
 		// Get the skill by name
 		skill, err = util.GetSkillByName(c.URLParams["skill"])
 		if err != nil {
-			return req, errors.New("No skill found for the given skill name")
+			return req, errors.New("no skill found for the given skill name")
 		}
 	}
 
 	// Read the level and make sure it is numeric
 	goal, err := strconv.Atoi(c.URLParams["goal"])
 	if err != nil {
-		return req, errors.New("Invalid goal entered, make sure it is numeric")
+		return req, errors.New("invalid goal entered, make sure it is numeric")
 	}
 
 	// Make sure the level is within valid bounds
 	if goal < 0 || goal > 200000000 {
-		return req, errors.New("Invalid level/xp goal entered, make sure it 0-200,000,000")
+		return req, errors.New("invalid level/xp goal entered, make sure it 0-200,000,000")
 	}
 
 	// Switch the goal type if the goal exceeds the maximum skill level
-	goaltype := util.GoalLevel
-	if (skill.Id == util.INVENTION_ID && goal > util.INVENTION_MAX_LEVEL) || (skill.Id != util.INVENTION_ID && goal > util.MAX_LEVEL) {
-		goaltype = util.GoalXP
+	goalType := util.GoalLevel
+	if (skill.Id == util.InventionId && goal > util.InventionLevelMax) || (skill.Id != util.InventionId && goal > util.LevelMax) {
+		goalType = util.GoalXP
 	}
 
 	req.AddProperty("username", username)
 	req.AddProperty("id", id)
 	req.AddProperty("goal", goal)
 	req.AddProperty("skill", skill)
-	req.AddProperty("goaltype", goaltype)
+	req.AddProperty("goalType", goalType)
 	return req, nil
 }
 
@@ -260,15 +258,14 @@ func drawBar(img draw.Image, percent int) {
 	width := int(135.0 * (float64(percent) / 100.0))
 	height := 14
 
-	green := color.RGBA{0, 255, 0, 255}
-	// todo: red
+	green := color.RGBA{R: 0, G: 255, B: 0, A: 255}
 	bar := image.Rect(x, y, x+width, y+height)
 	draw.Draw(img, bar, &image.Uniform{green}, image.ZP, draw.Src)
 }
 
 // Load base image to memory
-func loadbaseImage() *image.RGBA {
-	baseImageHandle, _ := os.Open("assets/img/base.png")
+func loadBaseImage() *image.RGBA {
+	baseImageHandle, _ := os.Open("resources/assets/img/base.png")
 	defer baseImageHandle.Close()
 	baseImage := image.NewRGBA(image.Rect(0, 0, baseWidth, baseHeight))
 	img, _ := png.Decode(baseImageHandle)

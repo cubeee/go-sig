@@ -14,8 +14,8 @@ import (
 	"image/draw"
 	"net/http"
 	"net/url"
-	"signature/generators"
-	"signature/util"
+	"github.com/cubeee/go-sig/signature/generators"
+	"github.com/cubeee/go-sig/signature/util"
 	"strconv"
 )
 
@@ -24,12 +24,10 @@ var (
 	baseHeight    = 25
 	bottomPadding = 20
 	paddingSides  = 5
-	baseImage     *image.RGBA
 	dpi           = 72.0
-	baseFont      = util.LoadFont("./assets/fonts/MuseoSans_500.ttf")
+	baseFont      = util.LoadFont("./resources/assets/fonts/MuseoSans_500.ttf")
 	fontColor     = image.NewUniform(color.RGBA{245, 178, 65, 255})
 	size          = 15.0
-	salt          = "ded3b63a6f11a9efd8e0f6a9b84fbeb1"
 )
 
 type MultiGoalGenerator struct {
@@ -39,7 +37,7 @@ type MultiGoalGenerator struct {
 type MultiGoal struct {
 	skill    util.Skill
 	goal     int
-	goaltype util.GoalType
+	goalType util.GoalType
 }
 
 func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (util.Signature, error) {
@@ -66,10 +64,9 @@ func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (ut
 			})}
 	}
 
-	baseImage := loadbaseImage(len(goals))
+	baseImage := loadBaseImage(len(goals))
 
-	drawer := createDrawer(baseImage, fontColor, baseFont, size, dpi,
-		font.HintingFull)
+	drawer := createDrawer(baseImage, fontColor, baseFont, size, dpi, font.HintingFull)
 
 	drawString := func(str string, x fixed.Int26_6, y int) {
 		drawer.Dot = fixed.Point26_6{
@@ -94,7 +91,7 @@ func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (ut
 		currentXP := stat.Xp
 		var goalXP int
 		var remainder int
-		if goal.goaltype == util.GoalXP {
+		if goal.goalType == util.GoalXP {
 			goalXP = goal.goal
 			remainder = goalXP - currentXP
 		} else {
@@ -130,7 +127,7 @@ func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (ut
 		font.HintingFull)
 	drawRightAlignedString("sig.scapelog.com", goalX, y)
 
-	return util.Signature{username, baseImage}, nil
+	return util.Signature{Username: username, Image: baseImage}, nil
 }
 
 func (m MultiGoalGenerator) Name() string {
@@ -182,8 +179,8 @@ func (m MultiGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, requ
 		buf.WriteString(url.QueryEscape(goal))
 	}
 
-	hide_username := form.Get("hide")
-	if hide_username == "on" && util.AES_KEY != nil && len(util.AES_KEY) > 0 {
+	hideUsername := form.Get("hide")
+	if hideUsername == "on" && util.AesKey != nil && len(util.AesKey) > 0 {
 		name, err := util.Encrypt(username)
 		if err == nil {
 			name = "_" + name
@@ -192,8 +189,8 @@ func (m MultiGoalGenerator) HandleForm(c web.C, writer http.ResponseWriter, requ
 	}
 
 	hash := buf.String()
-	url := fmt.Sprintf("/multi/%s?%s", username, hash)
-	util.ServeResultPage(c, writer, request, url)
+	imageUrl := fmt.Sprintf("/multi/%s?%s", username, hash)
+	util.ServeResultPage(writer, imageUrl)
 }
 
 // Parse the request into a signature request
@@ -203,13 +200,13 @@ func (m MultiGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (uti
 	username := util.ParseUsername(c.URLParams["username"])
 	usernameLength := len(username)
 	if !util.UsernameRegex.MatchString(username) {
-		return req, errors.New("Invalid username entered, allowed characters: alphabets, numbers, _ and +")
+		return req, errors.New("invalid username entered, allowed characters: alphabets, numbers, _ and +")
 	}
 	if usernameLength < 1 || usernameLength > 12 {
-		return req, errors.New("Username has to be between 1 and 12 characters long")
+		return req, errors.New("username has to be between 1 and 12 characters long")
 	}
 
-	goals := []MultiGoal{}
+	var goals []MultiGoal
 	params, _ := util.ParseQueryParameters(r.URL.RawQuery)
 	for _, param := range params {
 		skillName, skillGoal := param.Key, param.Value
@@ -217,7 +214,7 @@ func (m MultiGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (uti
 		// Make sure the skill is valid
 		skill, err := util.GetSkillByName(skillName)
 		if err != nil {
-			return req, errors.New("No skill found for the given skill name '" + skillName + "'")
+			return req, errors.New("no skill found for the given skill name '" + skillName + "'")
 		}
 
 		// Check if goal has 'k' or 'm' suffix
@@ -227,18 +224,18 @@ func (m MultiGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (uti
 			goal, err = strconv.Atoi(skillGoal)
 		}
 		if err != nil {
-			return req, errors.New("Invalid goal entered for " + skillName + ", make sure it is numeric or has 'k'/'m' suffix")
+			return req, errors.New("invalid goal entered for " + skillName + ", make sure it is numeric or has 'k'/'m' suffix")
 		}
 
 		// Make sure the goal is within valid bounds
 		if goal < 0 || goal > 200000000 {
-			return req, errors.New("Invalid level/xp goal entered, make sure it 0-200,000,000")
+			return req, errors.New("invalid level/xp goal entered, make sure it 0-200,000,000")
 		}
 
 		// Switch the goal type if the goal exceeds the maximum skill level
-		goaltype := util.GetGoalType(skill, goal)
+		goalType := util.GetGoalType(skill, goal)
 
-		goals = append(goals, MultiGoal{skill, goal, goaltype})
+		goals = append(goals, MultiGoal{skill, goal, goalType})
 	}
 
 	req.AddProperty("username", username)
@@ -249,9 +246,9 @@ func (m MultiGoalGenerator) ParseSignatureRequest(c web.C, r *http.Request) (uti
 func drawBar(img draw.Image, percent, x, y, width, height int) {
 	greenWidth := int(float64(width) * (float64(percent) / 100.0))
 
-	red := color.RGBA{160, 0, 0, 255}
+	red := color.RGBA{R: 160, G: 0, B: 0, A: 255}
 	redBar := image.Rect(x, y, width, y+height)
-	green := color.RGBA{0, 160, 0, 255}
+	green := color.RGBA{R: 0, G: 160, B: 0, A: 255}
 	greenBar := image.Rect(x, y, x+greenWidth, y+height)
 
 	draw.Draw(img, redBar, &image.Uniform{red}, image.ZP, draw.Src)
@@ -259,9 +256,9 @@ func drawBar(img draw.Image, percent, x, y, width, height int) {
 }
 
 // Load base image to memory
-func loadbaseImage(goals int) *image.RGBA {
+func loadBaseImage(goals int) *image.RGBA {
 	baseImage := image.NewRGBA(image.Rect(0, 0, baseWidth, baseHeight*goals+bottomPadding))
-	black := color.RGBA{0, 0, 0, 255}
+	black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
 	draw.Draw(baseImage, baseImage.Bounds(), &image.Uniform{black}, image.ZP, draw.Src)
 	return baseImage
 }

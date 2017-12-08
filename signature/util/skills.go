@@ -13,9 +13,9 @@ type Skill struct {
 }
 
 const (
-	MAX_LEVEL           int = 126
-	INVENTION_MAX_LEVEL int = 150
-	INVENTION_ID        int = 26
+	LevelMax          = 126
+	InventionLevelMax = 150
+	InventionId       = 26
 )
 
 // todo: shortened names, no params, total level, front page form
@@ -49,8 +49,8 @@ var (
 		"Divination",    // 25
 		"Invention",     // 26
 	}
+	ExpThresholds          []int
 	Skills                 = map[int]Skill{}
-	ExpThresholds          = []int{}
 	InventionExpThresholds = []int{
 		0, 830, 1861, 2902, 3980, 5126, 6380, 7787, 9400, 11275,
 		13605, 16372, 19656, 23546, 28134, 33520, 39809, 47109, 55535,
@@ -78,10 +78,10 @@ func init() {
 		Skills[idx] = Skill{SkillNames[idx], idx}
 	}
 
-	ExpThresholds = make([]int, MAX_LEVEL+1)
+	ExpThresholds = make([]int, LevelMax+1)
 
 	points, output := 0.0, 0.0
-	for level := 1; level <= MAX_LEVEL+1; level++ {
+	for level := 1; level <= LevelMax+1; level++ {
 		ExpThresholds[level-1] = int(output)
 
 		points += math.Floor(float64(level) + 300.0*math.Pow(2.0, float64(level)/7.0))
@@ -98,7 +98,7 @@ func GetSkillByName(name string) (Skill, error) {
 			return s, nil
 		}
 	}
-	return s, errors.New("No skill found with the given name")
+	return s, errors.New("no skill found with the given name")
 }
 
 func GetSkillById(id int) (Skill, error) {
@@ -115,7 +115,7 @@ func XPToLevel(skill Skill, currentXp, targetLevel int) int {
 }
 
 func XPForLevel(skill Skill, level int) int {
-	if skill.Id == INVENTION_ID {
+	if skill.Id == InventionId {
 		return InventionExpThresholds[level-1]
 	} else {
 		return ExpThresholds[level-1]
@@ -125,11 +125,11 @@ func XPForLevel(skill Skill, level int) int {
 func LevelFromXP(skill Skill, xp int) int {
 	var maxLevel int
 	var xpTable []int
-	if skill.Id == INVENTION_ID {
-		maxLevel = INVENTION_MAX_LEVEL
+	if skill.Id == InventionId {
+		maxLevel = InventionLevelMax
 		xpTable = InventionExpThresholds
 	} else {
-		maxLevel = MAX_LEVEL
+		maxLevel = LevelMax
 		xpTable = ExpThresholds
 	}
 
