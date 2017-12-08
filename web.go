@@ -21,6 +21,7 @@ import (
 	"github.com/cubeee/go-sig/signature/generators/rs3"
 	"github.com/cubeee/go-sig/signature/generators/rs3/multi"
 	"github.com/cubeee/go-sig/signature/util"
+	"github.com/cubeee/go-sig/signature"
 )
 
 type NullWriter int
@@ -30,9 +31,6 @@ func (NullWriter) Write([]byte) (int, error) {
 }
 
 var (
-	imageRoot      = "images"
-	publicPath     = "resources/public/"
-	updateInterval = 10.0
 	indexTemplate  = pongo2.Must(pongo2.FromFile("resources/templates/index.tpl"))
 )
 
@@ -55,7 +53,7 @@ func createAndSaveSignature(req util.SignatureRequest, generator generators.Base
 
 // Save the image to disk with the given hash as the file name
 func saveImage(hash string, img image.Image) {
-	out, err := os.Create(imageRoot + "/" + hash)
+	out, err := os.Create(vars.ImageRoot + "/" + hash)
 	if err != nil {
 		log.Println(err)
 		return
@@ -76,13 +74,13 @@ func saveImage(hash string, img image.Image) {
 
 // Update the signature based on the image's last modification date
 func updateSignature(writer http.ResponseWriter, req util.SignatureRequest, generator generators.BaseGenerator) {
-	imagePath := fmt.Sprintf("%s/%s", imageRoot, req.Hash)
+	imagePath := fmt.Sprintf("%s/%s", vars.ImageRoot, req.Hash)
 	if stat, err := os.Stat(imagePath); err == nil {
 		modTime := stat.ModTime()
 		now := time.Now()
 		age := now.Sub(modTime)
 
-		if age.Minutes() >= updateInterval {
+		if age.Minutes() >= vars.UpdateInterval {
 			err = createAndSaveSignature(req, generator)
 			if err != nil {
 				writeTextResponse(writer, err.Error())
@@ -102,7 +100,7 @@ func serveSignature(writer http.ResponseWriter, r *http.Request, req util.Signat
 	attemptUpdate := true
 
 	// Check if an image already exists and create it if not
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", imageRoot, req.Hash)); os.IsNotExist(err) {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", vars.ImageRoot, req.Hash)); os.IsNotExist(err) {
 		err = createAndSaveSignature(req, generator)
 		if err != nil {
 			writeTextResponse(writer, err.Error())
@@ -115,7 +113,7 @@ func serveSignature(writer http.ResponseWriter, r *http.Request, req util.Signat
 		updateSignature(writer, req, generator)
 	}
 
-	http.ServeFile(writer, r, fmt.Sprintf("%s/%s", imageRoot, req.Hash))
+	http.ServeFile(writer, r, fmt.Sprintf("%s/%s", vars.ImageRoot, req.Hash))
 }
 
 // Front page
@@ -154,14 +152,41 @@ func finalizeHash(name, hash string) string {
 }
 
 func main() {
+	disableLogging := os.Getenv("DISABLE_LOGGING")
+	if disableLogging == "1" || disableLogging == "true" {
+		log.SetOutput(new(NullWriter))
+	}
+
 	log.Println("Starting go-sig")
 
-	if path := os.Getenv("IMG_PATH"); path != "" {
-		imageRoot = path
+	if secure := os.Getenv("SECURE"); secure != "" {
+		if sec, err := strconv.ParseBool(secure);  err == nil {
+			log.Println("secure:", sec)
+			proto := "https"
+			if !sec {
+				proto = "http"
+			}
+			vars.Protocol = proto
+		} else {
+			log.Println(err.Error())
+		}
 	}
-	log.Printf("Using image root: %s", imageRoot)
-	if _, err := os.Stat(imageRoot); os.IsNotExist(err) {
-		os.MkdirAll(imageRoot, 0750)
+
+	if vHost := os.Getenv("VIRTUAL_HOST"); vHost != "" {
+		vars.VirtualHost = vHost
+	}
+	log.Printf("Using virtual host: %s", vars.VirtualHost)
+
+	if path := os.Getenv("IMG_PATH"); path != "" {
+		vars.ImageRoot = path
+	}
+	log.Printf("Using image root: %s", vars.ImageRoot)
+	if _, err := os.Stat(vars.ImageRoot); os.IsNotExist(err) {
+		os.MkdirAll(vars.ImageRoot, 0740)
+	}
+
+	if key := os.Getenv("AES_KEY"); key != "" {
+		util.AesKey = []byte(key)
 	}
 
 	if procs := os.Getenv("PROCS"); procs != "" {
@@ -170,22 +195,13 @@ func main() {
 		}
 	}
 
-	if key := os.Getenv("AES_KEY"); key != "" {
-		util.AesKey = []byte(key)
-	}
-
-	disableLogging := os.Getenv("DISABLE_LOGGING")
-	if disableLogging == "1" || disableLogging == "true" {
-		log.SetOutput(new(NullWriter))
-	}
-
 	// Routes
 	log.Println("Mapping routes...")
 	goji.Get("/", index)
 
 	// Setup static files
 	static := web.New()
-	static.Get("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir(publicPath))))
+	static.Get("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir(vars.PublicPath))))
 	http.Handle("/assets/", static)
 
 	profile := os.Getenv("ENABLE_DEBUG")

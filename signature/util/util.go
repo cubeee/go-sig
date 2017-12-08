@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"github.com/cubeee/go-sig/signature"
 )
 
 var (
@@ -63,6 +64,7 @@ func NewSignatureRequest() ParsedSignatureRequest {
 func ServeResultPage(writer http.ResponseWriter, url string) {
 	if err := resultTemplate.ExecuteWriter(pongo2.Context{
 		"url": url,
+		"base_url": vars.Protocol + "://" + vars.VirtualHost,
 	}, writer); err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}

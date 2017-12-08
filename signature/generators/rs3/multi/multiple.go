@@ -17,6 +17,7 @@ import (
 	"github.com/cubeee/go-sig/signature/generators"
 	"github.com/cubeee/go-sig/signature/util"
 	"strconv"
+	"github.com/cubeee/go-sig/signature"
 )
 
 var (
@@ -123,9 +124,8 @@ func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (ut
 
 	// Watermark
 	y -= 5
-	drawer = createDrawer(baseImage, fontColor, baseFont, 11, dpi,
-		font.HintingFull)
-	drawRightAlignedString("sig.scapelog.com", goalX, y)
+	drawer = createDrawer(baseImage, fontColor, baseFont, 11, dpi, font.HintingFull)
+	drawRightAlignedString(vars.VirtualHost, goalX, y)
 
 	return util.Signature{Username: username, Image: baseImage}, nil
 }
