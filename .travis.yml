@@ -1,7 +1,10 @@
-language: go
-go:
-  - 1.5
-before_install:
-  - go get github.com/constabulary/gb/...
-install:
-  - ./install_dependencies.sh
+sudo: required
+
+addons:
+  apt:
+    packages:
+      - docker-ce
+
+script:
+- docker build -t go-sig .
+- docker run --rm go-sig test -f ./go-sig
