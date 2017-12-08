@@ -1,0 +1,6 @@
+**/.idea
+**/.git
+**/images
+**/build
+**/vendor
+**/systemd

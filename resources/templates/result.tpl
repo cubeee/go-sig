@@ -2,7 +2,6 @@
 
 {% block title %}Results :: RuneScape Signatures{% endblock %}
 {% block body %}
-{% set base_url = "https://sig.scapelog.com" %}
 
 <div class="ui container">
   <div class="ui one column centered grid">

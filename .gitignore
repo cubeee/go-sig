@@ -1,6 +1,7 @@
 # Hidden files
 .*
 !.travis.yml
+!.dockerignore
 
 # Temporary files
 *~
@@ -9,10 +10,8 @@
 !.git*
 
 # Go
-bin/
 build/
 pkg/
 vendor/
-images/
 
-systemd/go-sig.service
+docker-compose.yml

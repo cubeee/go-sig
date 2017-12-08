@@ -1,0 +1,14 @@
+version: '3'
+services:
+  go-sig:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3344:80"
+    environment:
+      IMG_PATH: '/tmp/signatures'
+      DISABLE_LOGGING: 'false'
+      PORT: 80
+      SECURE: 'false'
+      VIRTUAL_HOST: 'localhost:3344'
