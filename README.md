@@ -2,30 +2,22 @@
 
 [![Build Status][build-status-img]][build-status]
 
-Dynamically generated and updated skill goal signatures for RuneScape players
+Dynamically generated and updated skill goal signatures for RuneScape players.
 
-## Installation
-    # Install gb, the build tool
-    $ go get github.com/constabulary/gb/...
+## Building the Docker image
+```
+docker build -t go-sig .
+```
 
-    # Install dependencies from dependencies.txt
-    $ make deps
+## Running locally
+You can easily run go-sig locally with [Docker compose][docker-compose], you just have to make your own copy of ``docker-compose.yml`` from the provided template file and then use the following commands.
+```
+# Run
+docker-compose up
 
-    # Build go-sig
-    $ make build-gb
-
-    # Run go-sig
-    $ bin/signature
-
-## Deploying
-    # Build .deb package
-    $ make package
-
-    # Transfer build/go-sig.deb to your server
-    ...
-
-    # Install .deb on your server
-    remote> sudo dpkg -i go-sig.deb
+# Destroy
+docker-compose down
+```
 
 ## Environment variables
 Name | Action | Default
@@ -34,8 +26,10 @@ IMG_PATH | Path to the directory where you want to store the generated images | 
 PROCS | Number of operating system threads you want to give for `go-sig` | `runtime.NumCPU()`
 DISABLE_LOGGING | Use `true` or `1` to disable output from `log` | false
 ENABLE_DEBUG | Use `true` or `1` to map routes to `pprof` urls | false
-AES_KEY | The key used to encrypt and decrypt usernames in urls | ""
+AES_KEY | The key used to encrypt and decrypt hidden usernames in signature urls | ""
+VIRTUAL_HOST | The url displayed on generated signature result page | sig.scapelog.com
+SECURE | Use `true` for `https` and `false` for `http` to be used in links | true
 
 [build-status-img]: https://travis-ci.org/cubeee/go-sig.svg
 [build-status]: https://travis-ci.org/cubeee/go-sig
-[gb-site]: http://getgb.io/
+[docker-compose]: https://docs.docker.com/compose/
