@@ -108,6 +108,13 @@ func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (ut
 			percent = 100
 		}
 
+		if currentLevel > goalLevel {
+			currentLevel = goalLevel
+		}
+		if currentXP > goalXP {
+			currentXP = goalXP
+		}
+
 		// Skill name and current level
 		drawString(
 			fmt.Sprintf("%s: %d/%d", goal.skill.Name, currentLevel, goalLevel),
