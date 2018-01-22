@@ -117,7 +117,7 @@ func (m MultiGoalGenerator) CreateSignature(req util.ParsedSignatureRequest) (ut
 		drawRightAlignedString(util.Format(currentXP)+"/"+util.Format(goalXP), goalX, y)
 
 		// Bar
-		drawBar(baseImage, percent, nameX, y+20, baseWidth-5, 1)
+		drawBar(baseImage, percent, nameX, y+20, baseWidth-5-paddingSides, 1)
 
 		y += baseHeight
 	}
