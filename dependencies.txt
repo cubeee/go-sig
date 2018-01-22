@@ -1,0 +1,5 @@
+github.com/flosch/pongo2
+github.com/zenazn/goji
+github.com/zenazn/goji/web
+github.com/golang/freetype
+github.com/golang/freetype/truetype

@@ -1,0 +1,15 @@
+FROM golang:latest
+
+ARG PWD=/go/src/github.com/cubeee/go-sig
+
+WORKDIR $PWD
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        curl \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY ./install_dependencies.sh $PWD
+COPY ./dependencies.txt $PWD
+
+RUN $PWD/install_dependencies.sh
