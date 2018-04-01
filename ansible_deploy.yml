@@ -4,7 +4,7 @@
   tasks:
   - name: Run Docker container
     docker_container:
-      name: go-sig
+      name: "{{ container_name }}"
       image: "{{ image }}"
       restart: yes
       restart_policy: always
