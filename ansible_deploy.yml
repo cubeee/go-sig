@@ -1,0 +1,15 @@
+---
+- name: Deploy go-sig
+  hosts: hosts
+  tasks:
+  - name: Run Docker container
+    docker_container:
+      name: go-sig
+      image: "{{ image }}"
+      restart: yes
+      restart_policy: always
+      pull: "{{ pull }}"
+      recreate: "{{ recreate }}"
+      ports: "{{ ports }}"
+      exposed_ports: "{{ exposed_ports }}"
+      env: "{{ env }}"
