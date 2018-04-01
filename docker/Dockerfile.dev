@@ -9,7 +9,7 @@ RUN apt-get update \
         curl \
  && rm -rf /var/lib/apt/lists/*
 
-COPY ./install_dependencies.sh $PWD
-COPY ./dependencies.txt $PWD
+COPY ../install_dependencies.sh $PWD
+COPY ../dependencies.txt $PWD
 
 RUN $PWD/install_dependencies.sh

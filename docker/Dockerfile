@@ -1,11 +1,9 @@
 FROM golang:latest as builder
 WORKDIR /go/src/github.com/cubeee/go-sig
-RUN go-wrapper download github.com/flosch/pongo2 \
- && go-wrapper download github.com/zenazn/goji \
- && go-wrapper download github.com/zenazn/goji/web \
- && go-wrapper download github.com/golang/freetype \
- && go-wrapper download github.com/golang/freetype/truetype
-COPY . .
+COPY ./install_dependencies.sh $PWD
+COPY ./dependencies.txt $PWD
+RUN $PWD/install_dependencies.sh
+COPY ./ $PWD
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o build/go-sig .
 
 FROM alpine:latest
